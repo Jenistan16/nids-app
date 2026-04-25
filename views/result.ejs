@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Prediction Result — NIDS.AI</title>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+  <style>
+    :root{--bg:#050a0f;--surface:#0b1421;--surface2:#0f1e30;--accent:#00d4ff;--accent2:#ff3c6e;--accent3:#7b2fff;--text:#e8edf2;--muted:#6b7f99;--border:rgba(0,212,255,0.12);--success:#22c55e;--warning:#f59e0b}
+    *{margin:0;padding:0;box-sizing:border-box}
+    body{background:var(--bg);color:var(--text);font-family:'Syne',sans-serif;min-height:100vh;display:flex}
+    .sidebar{width:240px;min-height:100vh;background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;position:fixed;top:0;left:0;z-index:50}
+    .sidebar-logo{padding:1.5rem;border-bottom:1px solid var(--border)}
+    .sidebar-logo a{font-family:'Space Mono',monospace;font-size:1rem;font-weight:700;color:var(--accent);text-decoration:none}
+    .sidebar-logo a span{color:var(--accent2)}
+    .sidebar-nav{flex:1;padding:1rem 0}
+    .nav-section{padding:.5rem 1rem .25rem;font-family:'Space Mono',monospace;font-size:.65rem;color:var(--muted);text-transform:uppercase;letter-spacing:.1em}
+    .nav-item{display:flex;align-items:center;gap:.75rem;padding:.7rem 1.25rem;color:var(--muted);text-decoration:none;font-size:.88rem;transition:all .2s;border-left:3px solid transparent}
+    .nav-item:hover,.nav-item.active{color:var(--text);background:rgba(0,212,255,.06);border-left-color:var(--accent)}
+    .sidebar-footer{padding:1.25rem;border-top:1px solid var(--border)}
+    .avatar{width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,var(--accent),var(--accent3));display:flex;align-items:center;justify-content:center;font-weight:700;font-size:.9rem;overflow:hidden}
+    .avatar img{width:100%;height:100%;object-fit:cover}
+    .user-info{display:flex;align-items:center;gap:.75rem;margin-bottom:1rem}
+    .user-name{font-size:.85rem;font-weight:600}
+    .btn-logout{display:block;text-align:center;background:rgba(255,60,110,.1);border:1px solid rgba(255,60,110,.25);color:var(--accent2);padding:.5rem;border-radius:6px;font-size:.8rem;text-decoration:none}
+    .main{margin-left:240px;flex:1;padding:2rem;max-width:calc(100vw - 240px)}
+    .page-header{margin-bottom:2rem;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:1rem}
+    .page-header h1{font-size:1.8rem;font-weight:800}
+    .page-header p{color:var(--muted);font-size:.85rem;margin-top:.2rem;font-family:'Space Mono',monospace}
+    .btn-back{background:var(--surface);border:1px solid var(--border);color:var(--text);padding:.6rem 1.25rem;border-radius:8px;font-size:.85rem;text-decoration:none;font-weight:600;transition:all .2s}
+    .btn-back:hover{border-color:var(--accent);color:var(--accent)}
+    .btn-dashboard{background:linear-gradient(135deg,var(--accent),var(--accent3));color:white;padding:.6rem 1.25rem;border-radius:8px;font-size:.85rem;text-decoration:none;font-weight:600}
+
+    /* Result hero */
+    .result-hero{border-radius:16px;padding:2.5rem;margin-bottom:1.5rem;text-align:center;position:relative;overflow:hidden}
+    .result-hero.attack{background:linear-gradient(135deg,rgba(255,60,110,.12),rgba(239,68,68,.08));border:1px solid rgba(255,60,110,.3)}
+    .result-hero.normal{background:linear-gradient(135deg,rgba(34,197,94,.1),rgba(0,212,255,.05));border:1px solid rgba(34,197,94,.3)}
+    .result-icon{font-size:4rem;margin-bottom:1rem;display:block}
+    .result-status{font-size:2.2rem;font-weight:800;margin-bottom:.5rem}
+    .result-status.attack{color:var(--accent2)}
+    .result-status.normal{color:var(--success)}
+    .result-desc{font-size:.95rem;color:var(--muted);margin-bottom:1.5rem;max-width:500px;margin-left:auto;margin-right:auto;line-height:1.6}
+    .result-meta{display:flex;gap:.75rem;justify-content:center;flex-wrap:wrap}
+    .pill{display:inline-flex;align-items:center;gap:.35rem;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:100px;padding:.35rem .9rem;font-size:.78rem;font-family:'Space Mono',monospace}
+    .pill.sim{color:var(--warning);border-color:rgba(245,158,11,.3);background:rgba(245,158,11,.08)}
+
+    /* Details grid */
+    .details-grid{display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1.5rem}
+    .card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:1.5rem}
+    .card-title{font-size:.9rem;font-weight:700;margin-bottom:1.25rem;display:flex;align-items:center;gap:.5rem}
+    .card-title::before{content:'';display:inline-block;width:3px;height:13px;background:var(--accent);border-radius:2px}
+
+    /* Confidence */
+    .conf-wrap{margin:1rem 0}
+    .conf-labels{display:flex;justify-content:space-between;font-size:.78rem;color:var(--muted);margin-bottom:.4rem}
+    .conf-bar{height:8px;background:rgba(255,255,255,.08);border-radius:100px;overflow:hidden}
+    .conf-fill{height:100%;border-radius:100px;transition:width 1.2s cubic-bezier(.4,0,.2,1)}
+    .conf-fill.attack{background:linear-gradient(90deg,var(--warning),var(--accent2))}
+    .conf-fill.normal{background:linear-gradient(90deg,var(--accent),var(--success))}
+
+    /* Detail table */
+    .detail-table{width:100%;font-size:.83rem}
+    .detail-table tr td:first-child{color:var(--muted);padding:.4rem 0;width:55%}
+    .detail-table tr td:last-child{font-weight:600;text-align:right;font-family:'Space Mono',monospace;font-size:.78rem}
+
+    /* Attack types */
+    .attack-types{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:.6rem;margin-top:1rem}
+    .at-item{background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.07);border-radius:8px;padding:.7rem;font-size:.78rem;transition:all .2s}
+    .at-item.highlighted{border-color:var(--accent2);background:rgba(255,60,110,.08)}
+    .at-item.highlighted-normal{border-color:var(--success);background:rgba(34,197,94,.08)}
+    .at-name{font-weight:700;margin-bottom:.25rem}
+    .at-desc{color:var(--muted);font-size:.7rem;line-height:1.4}
+
+    /* Input params */
+    .params-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(185px,1fr));gap:.45rem;margin-top:1rem}
+    .param-item{background:rgba(255,255,255,.03);border-radius:6px;padding:.4rem .65rem;font-size:.74rem;display:flex;gap:.4rem;align-items:baseline}
+    .param-key{color:var(--muted);font-family:'Space Mono',monospace;flex-shrink:0}
+    .param-val{font-family:'Space Mono',monospace;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+    .note-box{background:rgba(0,212,255,.06);border:1px solid rgba(0,212,255,.2);border-radius:8px;padding:.75rem 1rem;font-size:.8rem;color:var(--accent);margin-bottom:1rem}
+    .warn-box{background:rgba(245,158,11,.06);border:1px solid rgba(245,158,11,.25);border-radius:8px;padding:.75rem 1rem;font-size:.8rem;color:var(--warning);margin-bottom:1rem}
+
+    /* Batch */
+    .batch-summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:1rem;margin-bottom:1.5rem}
+    .batch-stat{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:1.25rem;text-align:center}
+    .batch-stat .bval{font-size:1.8rem;font-weight:800;margin-bottom:.25rem}
+    .batch-stat .blbl{font-size:.75rem;color:var(--muted)}
+    .charts-row{display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1.5rem}
+    .tbl-wrap{background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden}
+    .tbl-header{padding:1rem 1.5rem;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center}
+    .tbl-header h3{font-size:.95rem;font-weight:700}
+    table{width:100%;border-collapse:collapse}
+    th{font-family:'Space Mono',monospace;font-size:.62rem;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);padding:.55rem 1rem;text-align:left;border-bottom:1px solid var(--border)}
+    td{padding:.65rem 1rem;font-size:.82rem;border-bottom:1px solid rgba(255,255,255,.04)}
+    tr:last-child td{border:none}
+    .badge{display:inline-flex;align-items:center;gap:.3rem;padding:.22rem .55rem;border-radius:100px;font-size:.7rem;font-weight:600}
+    .badge-attack{background:rgba(255,60,110,.12);color:var(--accent2);border:1px solid rgba(255,60,110,.25)}
+    .badge-normal{background:rgba(34,197,94,.12);color:var(--success);border:1px solid rgba(34,197,94,.25)}
+
+    @media(max-width:900px){.sidebar{display:none}.main{margin-left:0;max-width:100vw}.details-grid,.charts-row{grid-template-columns:1fr}}
+  </style>
+</head>
+<body>
+  <%# ── Sidebar ──────────────────────────────────────────────────────────── %>
+  <aside class="sidebar">
+    <div class="sidebar-logo"><a href="/dashboard">NIDS<span>.</span>AI</a></div>
+    <nav class="sidebar-nav">
+      <div class="nav-section">Main</div>
+      <a href="/dashboard" class="nav-item"><span>📊</span> Dashboard</a>
+      <a href="/predict"   class="nav-item active"><span>🔍</span> Run Prediction</a>
+      <div class="nav-section">History</div>
+      <a href="/dashboard/history" class="nav-item"><span>📋</span> Prediction Logs</a>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="user-info">
+        <div class="avatar">
+          <% if (user && user.avatar) { %><img src="<%= user.avatar %>" alt=""><% } else { %><%= user ? user.name.charAt(0).toUpperCase() : 'U' %><% } %>
+        </div>
+        <div class="user-name"><%= user ? user.name : '' %></div>
+      </div>
+      <a href="/auth/logout" class="btn-logout">Sign Out</a>
+    </div>
+  </aside>
+
+  <%# ── Main ────────────────────────────────────────────────────────────── %>
+  <main class="main">
+    <div class="page-header">
+      <div>
+        <h1>Prediction Result</h1>
+        <p>ID: <%= predictionId %> &nbsp;·&nbsp; <%= new Date().toLocaleString() %></p>
+      </div>
+      <div style="display:flex;gap:.75rem;flex-wrap:wrap">
+        <a href="/predict" class="btn-back">← New Prediction</a>
+        <a href="/dashboard" class="btn-dashboard">Dashboard</a>
+      </div>
+    </div>
+
+    <%# ───────────────────────────── CSV BATCH RESULT ────────────────────── %>
+    <% if (predictionType === 'csv') {
+         const S = result.summary || {};
+         const preds = result.predictions || [];
+    %>
+      <div class="batch-summary">
+        <div class="batch-stat"><div class="bval" style="color:var(--accent)"><%= S.total || 0 %></div><div class="blbl">Rows Analysed</div></div>
+        <div class="batch-stat"><div class="bval" style="color:var(--accent2)"><%= S.attack_count || 0 %></div><div class="blbl">Attacks Found</div></div>
+        <div class="batch-stat"><div class="bval" style="color:var(--success)"><%= S.normal_count || 0 %></div><div class="blbl">Normal Traffic</div></div>
+        <div class="batch-stat"><div class="bval" style="color:var(--warning)"><%= S.attack_percentage || 0 %>%</div><div class="blbl">Attack Rate</div></div>
+      </div>
+
+      <div class="charts-row">
+        <div class="card"><div class="card-title">Traffic Split</div><canvas id="binaryChart" height="180"></canvas></div>
+        <div class="card"><div class="card-title">Category Breakdown</div><canvas id="catChart" height="180"></canvas></div>
+      </div>
+
+      <div class="tbl-wrap">
+        <div class="tbl-header">
+          <h3>Row-by-Row Results — <em style="font-weight:400;color:var(--muted)"><%= csvFileName %></em></h3>
+          <span style="font-size:.78rem;color:var(--muted)"><%= preds.length %> shown<% if(S.total_in_file && S.total_in_file > preds.length){ %> of <%= S.total_in_file %> total<% } %></span>
+        </div>
+        <div style="overflow-x:auto">
+          <table>
+            <thead><tr><th>Row</th><th>Binary</th><th>Category</th><th>Confidence</th></tr></thead>
+            <tbody>
+              <% preds.slice(0,100).forEach(p => { %>
+                <tr>
+                  <td style="font-family:'Space Mono',monospace;color:var(--muted)">#<%= p.row %></td>
+                  <td><span class="badge <%= p.is_attack ? 'badge-attack' : 'badge-normal' %>"><%= p.is_attack ? '⚠️' : '✅' %> <%= p.binary_result %></span></td>
+                  <td style="color:var(--muted)"><%= p.multiclass_result || '—' %></td>
+                  <td style="font-family:'Space Mono',monospace;font-size:.78rem"><%= p.probability != null ? p.probability + '%' : '—' %></td>
+                </tr>
+              <% }) %>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    <%# ───────────────────────────── SINGLE RESULT ─────────────────────────── %>
+    <% } else {
+         const isAttack = result.is_attack || false;
+         const category = result.attack_category || result.binary_result || 'Unknown';
+         const prob     = result.probability;
+    %>
+
+      <% if (result.simulated) { %>
+        <div class="warn-box">⚡ <strong>Simulation Mode:</strong> Models are not trained yet. This result is based on heuristic rules. Train models with <code>python3 python/train_models.py</code> for accurate predictions.</div>
+      <% } %>
+
+      <%# Hero card %>
+      <div class="result-hero <%= isAttack ? 'attack' : 'normal' %>">
+        <span class="result-icon"><%= isAttack ? '⚠️' : '🛡️' %></span>
+        <div class="result-status <%= isAttack ? 'attack' : 'normal' %>">
+          <%= isAttack ? 'ATTACK DETECTED' : 'NORMAL TRAFFIC' %>
+        </div>
+        <div class="result-desc"><%= result.description || (isAttack ? 'Malicious network activity has been identified in this connection.' : 'This connection appears to be normal, legitimate network traffic.') %></div>
+        <div class="result-meta">
+          <span class="pill">Model: <%= model.replace('_',' ').toUpperCase() %></span>
+          <span class="pill">Type: <%= classType %></span>
+          <% if (prob != null) { %><span class="pill">Confidence: <%= prob %>%</span><% } %>
+          <% if (result.multiclass_result && result.multiclass_result !== result.binary_result) { %>
+            <span class="pill">Category: <%= result.multiclass_result %></span>
+          <% } %>
+          <% if (result.simulated) { %><span class="pill sim">⚡ Simulated</span><% } %>
+        </div>
+      </div>
+
+      <%# Detail cards %>
+      <div class="details-grid">
+        <%# Left: Classification details %>
+        <div class="card">
+          <div class="card-title">Classification Details</div>
+
+          <% if (prob != null) { %>
+            <div class="conf-wrap">
+              <div class="conf-labels"><span>Confidence Score</span><span><%= prob %>%</span></div>
+              <div class="conf-bar"><div class="conf-fill <%= isAttack ? 'attack' : 'normal' %>" id="confBar" style="width:0%"></div></div>
+            </div>
+          <% } %>
+
+          <table class="detail-table">
+            <tr><td>Binary Classification</td><td style="color:<%= isAttack ? 'var(--accent2)' : 'var(--success)' %>"><%= result.binary_result || '—' %></td></tr>
+            <tr><td>Multiclass Result</td><td><%= result.multiclass_result || result.binary_result || '—' %></td></tr>
+            <tr><td>Attack Category</td><td><%= category %></td></tr>
+            <tr><td>Model Used</td><td><%= model.replace('_',' ').toUpperCase() %></td></tr>
+            <tr><td>Classification Type</td><td><%= classType %></td></tr>
+            <tr><td>Prediction ID</td><td style="font-size:.7rem;word-break:break-all"><%= predictionId %></td></tr>
+            <% if (predictionType === 'random' && result.actual_label) { %>
+              <tr><td>Actual Label (Dataset)</td><td style="color:var(--accent)"><%= result.actual_label %> (<%= result.actual_category || '' %>)</td></tr>
+            <% } %>
+          </table>
+        </div>
+
+        <%# Right: Attack category explanations %>
+        <div class="card">
+          <div class="card-title">Attack Category Reference</div>
+          <div class="attack-types">
+            <div class="at-item <%= category === 'Normal' ? 'highlighted-normal' : '' %>">
+              <div class="at-name">✅ Normal</div>
+              <div class="at-desc">Regular legitimate network traffic with no malicious activity.</div>
+            </div>
+            <div class="at-item <%= category === 'DoS' ? 'highlighted' : '' %>">
+              <div class="at-name">💥 DoS</div>
+              <div class="at-desc">Denial of Service — overwhelms resources to disrupt availability.</div>
+            </div>
+            <div class="at-item <%= category === 'Probe' ? 'highlighted' : '' %>">
+              <div class="at-name">🔍 Probe</div>
+              <div class="at-desc">Surveillance scan to gather information for future attacks.</div>
+            </div>
+            <div class="at-item <%= category === 'R2L' ? 'highlighted' : '' %>">
+              <div class="at-name">🌐 R2L</div>
+              <div class="at-desc">Remote-to-Local — unauthorised remote access attempts.</div>
+            </div>
+            <div class="at-item <%= category === 'U2R' ? 'highlighted' : '' %>">
+              <div class="at-name">👑 U2R</div>
+              <div class="at-desc">User-to-Root — privilege escalation to gain root access.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <%# Input parameters %>
+      <% if (inputParams && Object.keys(inputParams).length > 0) { %>
+        <div class="card" style="margin-bottom:1.5rem">
+          <div class="card-title">Analysed Input Parameters</div>
+          <% if (predictionType === 'random' && result.actual_label) { %>
+            <div class="note-box">🎲 Random row selected from NSL-KDD dataset · Actual label: <strong><%= result.actual_label %></strong> (<%= result.actual_category || 'N/A' %>)</div>
+          <% } %>
+          <div class="params-grid">
+            <% Object.entries(inputParams).forEach(([k,v]) => { %>
+              <div class="param-item">
+                <span class="param-key"><%= k %>:</span>
+                <span class="param-val" title="<%= v %>"><%= v %></span>
+              </div>
+            <% }) %>
+          </div>
+        </div>
+      <% } %>
+
+    <% } // end single result %>
+  </main>
+
+  <script>
+    <% if (predictionType !== 'csv') { %>
+      // Animate confidence bar
+      const bar = document.getElementById('confBar');
+      if (bar) {
+        const pct = <%- result.probability || 0 %>;
+        setTimeout(() => { bar.style.width = pct + '%'; }, 200);
+      }
+    <% } else {
+         const S = result.summary || {};
+         const cats = S.category_breakdown || {};
+    %>
+    // Batch charts
+    const COLORS = ['rgba(0,212,255,0.8)','rgba(255,60,110,0.8)','rgba(123,47,255,0.8)','rgba(251,146,60,0.8)','rgba(34,197,94,0.8)','rgba(239,68,68,0.8)'];
+
+    new Chart(document.getElementById('binaryChart'), {
+      type: 'doughnut',
+      data: {
+        labels: ['Normal','Attack'],
+        datasets: [{
+          data: [<%- S.normal_count || 0 %>, <%- S.attack_count || 0 %>],
+          backgroundColor: ['rgba(34,197,94,0.8)','rgba(255,60,110,0.8)'],
+          borderWidth: 0
+        }]
+      },
+      options: { responsive:true, maintainAspectRatio:false, cutout:'60%',
+        plugins:{ legend:{ labels:{ color:'#6b7f99', font:{family:'Syne'} }}} }
+    });
+
+    const catLabels = <%- JSON.stringify(Object.keys(cats)) %>;
+    const catData   = <%- JSON.stringify(Object.values(cats)) %>;
+    new Chart(document.getElementById('catChart'), {
+      type: 'bar',
+      data: {
+        labels: catLabels,
+        datasets: [{ data: catData, backgroundColor: COLORS, borderRadius: 5 }]
+      },
+      options: {
+        responsive:true, maintainAspectRatio:false,
+        scales: {
+          x:{ ticks:{color:'#6b7f99'}, grid:{color:'rgba(255,255,255,0.04)'} },
+          y:{ ticks:{color:'#6b7f99'}, grid:{color:'rgba(255,255,255,0.04)'} }
+        },
+        plugins:{ legend:{display:false} }
+      }
+    });
+    <% } %>
+  </script>
+</body>
+</html>

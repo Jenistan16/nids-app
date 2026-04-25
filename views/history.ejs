@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>History — NIDS.AI</title>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root{--bg:#050a0f;--surface:#0b1421;--accent:#00d4ff;--accent2:#ff3c6e;--accent3:#7b2fff;--text:#e8edf2;--muted:#6b7f99;--border:rgba(0,212,255,0.12);--success:#22c55e}
+    *{margin:0;padding:0;box-sizing:border-box}
+    body{background:var(--bg);color:var(--text);font-family:'Syne',sans-serif;min-height:100vh;display:flex}
+    .sidebar{width:240px;min-height:100vh;background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;position:fixed;top:0;left:0;z-index:50}
+    .sidebar-logo{padding:1.5rem;border-bottom:1px solid var(--border)}
+    .sidebar-logo a{font-family:'Space Mono',monospace;font-size:1rem;font-weight:700;color:var(--accent);text-decoration:none}
+    .sidebar-logo a span{color:var(--accent2)}
+    .sidebar-nav{flex:1;padding:1rem 0}
+    .nav-section{padding:.5rem 1rem .25rem;font-family:'Space Mono',monospace;font-size:.65rem;color:var(--muted);text-transform:uppercase;letter-spacing:.1em}
+    .nav-item{display:flex;align-items:center;gap:.75rem;padding:.7rem 1.25rem;color:var(--muted);text-decoration:none;font-size:.88rem;transition:all .2s;border-left:3px solid transparent}
+    .nav-item:hover,.nav-item.active{color:var(--text);background:rgba(0,212,255,.06);border-left-color:var(--accent)}
+    .nav-item .icon{width:18px;text-align:center}
+    .sidebar-footer{padding:1.25rem;border-top:1px solid var(--border)}
+    .user-info{display:flex;align-items:center;gap:.75rem;margin-bottom:1rem}
+    .avatar{width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,var(--accent),var(--accent3));display:flex;align-items:center;justify-content:center;font-weight:700;overflow:hidden}
+    .avatar img{width:100%;height:100%;object-fit:cover}
+    .user-name{font-size:.85rem;font-weight:600}
+    .btn-logout{display:block;text-align:center;background:rgba(255,60,110,.1);border:1px solid rgba(255,60,110,.25);color:var(--accent2);padding:.5rem;border-radius:6px;font-size:.8rem;text-decoration:none}
+    .main{margin-left:240px;flex:1;padding:2rem}
+    .page-header{margin-bottom:2rem;display:flex;justify-content:space-between;align-items:center}
+    .page-header h1{font-size:1.8rem;font-weight:800}
+    .page-header p{color:var(--muted);font-size:.9rem;margin-top:.25rem}
+    .btn-primary{background:linear-gradient(135deg,var(--accent),var(--accent3));color:white;padding:.6rem 1.25rem;border-radius:8px;font-size:.85rem;text-decoration:none;font-weight:600}
+    .card{background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden}
+    .card-header{padding:1.25rem 1.5rem;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center}
+    .card-header h3{font-size:1rem;font-weight:700}
+    .total-badge{font-family:'Space Mono',monospace;font-size:.75rem;color:var(--muted)}
+    table{width:100%;border-collapse:collapse}
+    th{font-family:'Space Mono',monospace;font-size:.62rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);padding:.6rem 1rem;text-align:left;border-bottom:1px solid var(--border)}
+    td{padding:.75rem 1rem;font-size:.83rem;border-bottom:1px solid rgba(255,255,255,.04)}
+    tr:last-child td{border:none}
+    tr:hover td{background:rgba(0,212,255,.03)}
+    .badge{display:inline-flex;align-items:center;gap:.3rem;padding:.22rem .55rem;border-radius:100px;font-size:.7rem;font-weight:600}
+    .badge-attack{background:rgba(255,60,110,.12);color:var(--accent2);border:1px solid rgba(255,60,110,.25)}
+    .badge-normal{background:rgba(34,197,94,.12);color:var(--success);border:1px solid rgba(34,197,94,.25)}
+    .badge-model{background:rgba(255,255,255,.06);color:var(--muted);border:1px solid rgba(255,255,255,.08)}
+    .badge-type{background:rgba(0,212,255,.08);color:var(--accent);border:1px solid rgba(0,212,255,.2)}
+    .pagination{display:flex;gap:.5rem;justify-content:center;padding:1.25rem;border-top:1px solid var(--border)}
+    .page-btn{padding:.4rem .8rem;border-radius:6px;font-size:.82rem;text-decoration:none;color:var(--muted);border:1px solid var(--border);transition:all .2s;font-family:'Space Mono',monospace}
+    .page-btn:hover,.page-btn.current{border-color:var(--accent);color:var(--accent)}
+    .empty-state{text-align:center;padding:4rem;color:var(--muted)}
+    .empty-state .icon{font-size:2.5rem;margin-bottom:.75rem}
+    @media(max-width:900px){.sidebar{display:none}.main{margin-left:0}}
+  </style>
+</head>
+<body>
+  <aside class="sidebar">
+    <div class="sidebar-logo"><a href="/dashboard">NIDS<span>.</span>AI</a></div>
+    <nav class="sidebar-nav">
+      <div class="nav-section">Main</div>
+      <a href="/dashboard" class="nav-item"><span class="icon">📊</span> Dashboard</a>
+      <a href="/predict" class="nav-item"><span class="icon">🔍</span> Run Prediction</a>
+      <div class="nav-section">History</div>
+      <a href="/dashboard/history" class="nav-item active"><span class="icon">📋</span> Prediction Logs</a>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="user-info">
+        <div class="avatar">
+          <% if (user.avatar) { %><img src="<%= user.avatar %>" alt=""><% } else { %><%= user.name.charAt(0).toUpperCase() %><% } %>
+        </div>
+        <div class="user-name"><%= user.name %></div>
+      </div>
+      <a href="/auth/logout" class="btn-logout">Sign Out</a>
+    </div>
+  </aside>
+
+  <main class="main">
+    <div class="page-header">
+      <div>
+        <h1>Prediction History</h1>
+        <p>All your network traffic analyses</p>
+      </div>
+      <a href="/predict" class="btn-primary">→ New Prediction</a>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <h3>All Predictions</h3>
+        <span class="total-badge"><%= total %> total records</span>
+      </div>
+
+      <% if (predictions.length === 0) { %>
+        <div class="empty-state">
+          <div class="icon">📋</div>
+          <p>No predictions yet. <a href="/predict" style="color:var(--accent)">Start your first analysis</a></p>
+        </div>
+      <% } else { %>
+        <div style="overflow-x:auto">
+          <table>
+            <thead>
+              <tr>
+                <th>Date & Time</th>
+                <th>Type</th>
+                <th>Model</th>
+                <th>Classification</th>
+                <th>Binary Result</th>
+                <th>Category</th>
+                <th>Confidence</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% predictions.forEach(pred => { %>
+                <tr>
+                  <td style="font-family:'Space Mono',monospace;font-size:.75rem;color:var(--muted)">
+                    <%= new Date(pred.createdAt).toLocaleString() %>
+                  </td>
+                  <td><span class="badge badge-type"><%= pred.predictionType %></span></td>
+                  <td><span class="badge badge-model"><%= pred.model.toUpperCase() %></span></td>
+                  <td style="color:var(--muted);font-size:.8rem"><%= pred.classType %></td>
+                  <td>
+                    <span class="badge <%= pred.binaryResult === 'Attack' ? 'badge-attack' : 'badge-normal' %>">
+                      <%= pred.binaryResult === 'Attack' ? '⚠️' : '✅' %> <%= pred.binaryResult || (pred.isBatchPrediction ? 'Batch' : '—') %>
+                    </span>
+                  </td>
+                  <td style="color:var(--muted);font-size:.8rem">
+                    <%= pred.attackCategory || pred.multiclassResult || (pred.isBatchPrediction ? pred.csvFileName : '—') %>
+                  </td>
+                  <td style="font-family:'Space Mono',monospace;font-size:.78rem">
+                    <%= pred.attackProbability ? pred.attackProbability + '%' : '—' %>
+                  </td>
+                </tr>
+              <% }) %>
+            </tbody>
+          </table>
+        </div>
+
+        <% if (totalPages > 1) { %>
+          <div class="pagination">
+            <% if (currentPage > 1) { %>
+              <a href="?page=<%= currentPage - 1 %>" class="page-btn">← Prev</a>
+            <% } %>
+            <% for(let i = Math.max(1, currentPage-2); i <= Math.min(totalPages, currentPage+2); i++) { %>
+              <a href="?page=<%= i %>" class="page-btn <%= i === currentPage ? 'current' : '' %>"><%= i %></a>
+            <% } %>
+            <% if (currentPage < totalPages) { %>
+              <a href="?page=<%= currentPage + 1 %>" class="page-btn">Next →</a>
+            <% } %>
+          </div>
+        <% } %>
+      <% } %>
+    </div>
+  </main>
+</body>
+</html>

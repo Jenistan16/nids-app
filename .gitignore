@@ -1,0 +1,9 @@
+node_modules/
+.env
+uploads/
+models/*.sav
+models/*.h5
+models/*.pkl
+__pycache__/
+*.pyc
+.DS_Store

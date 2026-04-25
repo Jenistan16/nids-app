@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title><%= code %> — NIDS.AI</title>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root{--bg:#050a0f;--surface:#0b1421;--accent:#00d4ff;--accent2:#ff3c6e;--text:#e8edf2;--muted:#6b7f99;--border:rgba(0,212,255,0.12)}
+    *{margin:0;padding:0;box-sizing:border-box}
+    body{background:var(--bg);color:var(--text);font-family:'Syne',sans-serif;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:2rem;text-align:center}
+    body::before{content:'';position:fixed;top:0;left:0;right:0;bottom:0;background-image:linear-gradient(rgba(0,212,255,.03) 1px,transparent 1px),linear-gradient(90deg,rgba(0,212,255,.03) 1px,transparent 1px);background-size:60px 60px;pointer-events:none}
+    .error-code{font-family:'Space Mono',monospace;font-size:7rem;font-weight:700;color:var(--accent);line-height:1;margin-bottom:1rem;opacity:.15;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%)}
+    .content{position:relative;z-index:1}
+    .icon{font-size:3.5rem;margin-bottom:1.5rem;display:block}
+    h1{font-size:2rem;font-weight:800;margin-bottom:.75rem}
+    p{color:var(--muted);font-size:.95rem;max-width:420px;line-height:1.6;margin-bottom:2rem}
+    .btn-home{background:linear-gradient(135deg,var(--accent),#7b2fff);color:white;padding:.8rem 2rem;border-radius:8px;text-decoration:none;font-weight:700;margin-right:.75rem;font-size:.9rem}
+    .btn-back{background:var(--surface);border:1px solid var(--border);color:var(--text);padding:.8rem 2rem;border-radius:8px;text-decoration:none;font-weight:600;font-size:.9rem}
+    .btn-back:hover{border-color:var(--accent)}
+    .code-badge{font-family:'Space Mono',monospace;font-size:.75rem;background:rgba(255,60,110,.1);color:var(--accent2);border:1px solid rgba(255,60,110,.3);padding:.3rem .8rem;border-radius:100px;display:inline-block;margin-bottom:1rem}
+  </style>
+</head>
+<body>
+  <span class="error-code"><%= code %></span>
+  <div class="content">
+    <span class="icon"><%= code === 404 ? '🔍' : '⚠️' %></span>
+    <div class="code-badge">Error <%= code %></div>
+    <h1><%= title %></h1>
+    <p><%= message %></p>
+    <div>
+      <a href="/" class="btn-home">← Go Home</a>
+      <% if (locals.user) { %>
+        <a href="/dashboard" class="btn-back">Dashboard</a>
+      <% } else { %>
+        <a href="javascript:history.back()" class="btn-back">Go Back</a>
+      <% } %>
+    </div>
+  </div>
+</body>
+</html>

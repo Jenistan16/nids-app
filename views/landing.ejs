@@ -1,0 +1,421 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NIDS — Network Intrusion Detection System</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/main.css">
+  <style>
+    :root {
+      --bg: #050a0f;
+      --surface: #0b1421;
+      --accent: #00d4ff;
+      --accent2: #ff3c6e;
+      --accent3: #7b2fff;
+      --text: #e8edf2;
+      --muted: #6b7f99;
+      --border: rgba(0,212,255,0.15);
+    }
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body { background:var(--bg); color:var(--text); font-family:'Syne',sans-serif; overflow-x:hidden; }
+
+    /* Grid lines background */
+    body::before {
+      content:'';
+      position:fixed; top:0; left:0; right:0; bottom:0;
+      background-image:
+        linear-gradient(rgba(0,212,255,0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0,212,255,0.03) 1px, transparent 1px);
+      background-size: 60px 60px;
+      pointer-events:none; z-index:0;
+    }
+
+    nav {
+      position:fixed; top:0; left:0; right:0; z-index:100;
+      display:flex; justify-content:space-between; align-items:center;
+      padding:1.2rem 2.5rem;
+      background:rgba(5,10,15,0.8);
+      backdrop-filter:blur(20px);
+      border-bottom:1px solid var(--border);
+    }
+    .logo {
+      font-family:'Space Mono',monospace;
+      font-size:1.1rem; font-weight:700;
+      color:var(--accent);
+      letter-spacing:0.1em;
+      text-decoration:none;
+    }
+    .logo span { color:var(--accent2); }
+    nav .nav-links { display:flex; gap:1.5rem; align-items:center; }
+    nav a { color:var(--muted); text-decoration:none; font-size:0.9rem; transition:color 0.2s; }
+    nav a:hover { color:var(--text); }
+    .btn-nav {
+      background:transparent;
+      border:1px solid var(--accent);
+      color:var(--accent);
+      padding:0.45rem 1.2rem;
+      border-radius:4px;
+      font-family:'Space Mono',monospace;
+      font-size:0.8rem;
+      cursor:pointer;
+      text-decoration:none;
+      transition:all 0.2s;
+    }
+    .btn-nav:hover { background:var(--accent); color:var(--bg); }
+
+    /* Hero */
+    .hero {
+      min-height:100vh;
+      display:flex; align-items:center; justify-content:center;
+      position:relative; z-index:1;
+      padding:6rem 2rem 4rem;
+      text-align:center;
+    }
+    .hero-inner { max-width:800px; }
+    .hero-badge {
+      display:inline-block;
+      font-family:'Space Mono',monospace;
+      font-size:0.72rem;
+      color:var(--accent);
+      background:rgba(0,212,255,0.08);
+      border:1px solid rgba(0,212,255,0.25);
+      padding:0.35rem 1rem;
+      border-radius:100px;
+      margin-bottom:2rem;
+      letter-spacing:0.15em;
+      text-transform:uppercase;
+    }
+    .hero h1 {
+      font-size:clamp(2.8rem, 7vw, 5.5rem);
+      font-weight:800;
+      line-height:1.05;
+      margin-bottom:1.5rem;
+      letter-spacing:-0.02em;
+    }
+    .hero h1 span.grad {
+      background:linear-gradient(135deg, var(--accent), var(--accent3));
+      -webkit-background-clip:text;
+      -webkit-text-fill-color:transparent;
+    }
+    .hero h1 span.red { color:var(--accent2); }
+    .hero p {
+      font-size:1.15rem;
+      color:var(--muted);
+      max-width:560px;
+      margin:0 auto 2.5rem;
+      line-height:1.7;
+    }
+    .hero-cta {
+      display:flex; gap:1rem; justify-content:center; flex-wrap:wrap;
+    }
+    .btn-primary {
+      background:linear-gradient(135deg, var(--accent), var(--accent3));
+      color:white;
+      padding:0.8rem 2rem;
+      border-radius:6px;
+      font-size:0.95rem;
+      font-weight:700;
+      text-decoration:none;
+      border:none; cursor:pointer;
+      transition:transform 0.2s, box-shadow 0.2s;
+      display:inline-flex; align-items:center; gap:0.5rem;
+    }
+    .btn-primary:hover { transform:translateY(-2px); box-shadow:0 8px 30px rgba(0,212,255,0.3); }
+    .btn-outline {
+      background:transparent;
+      color:var(--text);
+      padding:0.8rem 2rem;
+      border-radius:6px;
+      font-size:0.95rem;
+      font-weight:600;
+      text-decoration:none;
+      border:1px solid rgba(255,255,255,0.15);
+      transition:all 0.2s;
+    }
+    .btn-outline:hover { border-color:var(--accent); color:var(--accent); }
+
+    /* Floating orbs */
+    .orb {
+      position:absolute;
+      border-radius:50%;
+      filter:blur(80px);
+      pointer-events:none;
+    }
+    .orb-1 { width:400px; height:400px; background:rgba(0,212,255,0.07); top:5%; left:-10%; }
+    .orb-2 { width:500px; height:500px; background:rgba(123,47,255,0.07); top:20%; right:-15%; }
+    .orb-3 { width:300px; height:300px; background:rgba(255,60,110,0.05); bottom:10%; left:20%; }
+
+    /* Stats row */
+    .stats-row {
+      position:relative; z-index:1;
+      display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr));
+      gap:1px;
+      max-width:800px; margin:0 auto;
+      background:var(--border);
+      border:1px solid var(--border);
+      border-radius:12px;
+      overflow:hidden;
+    }
+    .stat-item {
+      background:var(--surface);
+      padding:1.5rem;
+      text-align:center;
+    }
+    .stat-value {
+      font-family:'Space Mono',monospace;
+      font-size:2rem; font-weight:700;
+      color:var(--accent);
+      display:block;
+    }
+    .stat-label { font-size:0.8rem; color:var(--muted); margin-top:0.25rem; }
+
+    /* Features */
+    .section { position:relative; z-index:1; padding:5rem 2rem; }
+    .section-header { text-align:center; margin-bottom:3rem; }
+    .section-header h2 {
+      font-size:2.2rem; font-weight:800;
+      margin-bottom:0.75rem;
+    }
+    .section-header p { color:var(--muted); font-size:1rem; }
+    .tag {
+      font-family:'Space Mono',monospace;
+      font-size:0.7rem;
+      color:var(--accent3);
+      text-transform:uppercase;
+      letter-spacing:0.15em;
+      display:block;
+      margin-bottom:0.5rem;
+    }
+
+    .features-grid {
+      display:grid;
+      grid-template-columns:repeat(auto-fit,minmax(250px,1fr));
+      gap:1.5rem;
+      max-width:1100px; margin:0 auto;
+    }
+    .feature-card {
+      background:var(--surface);
+      border:1px solid var(--border);
+      border-radius:12px;
+      padding:1.8rem;
+      transition:border-color 0.2s, transform 0.2s;
+    }
+    .feature-card:hover { border-color:var(--accent); transform:translateY(-3px); }
+    .feature-icon {
+      width:44px; height:44px;
+      background:rgba(0,212,255,0.1);
+      border-radius:8px;
+      display:flex; align-items:center; justify-content:center;
+      font-size:1.3rem;
+      margin-bottom:1rem;
+    }
+    .feature-card h3 { font-size:1rem; font-weight:700; margin-bottom:0.5rem; }
+    .feature-card p { font-size:0.85rem; color:var(--muted); line-height:1.6; }
+
+    /* Models */
+    .models-section { padding:4rem 2rem; position:relative; z-index:1; }
+    .models-grid {
+      display:grid;
+      grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
+      gap:1rem;
+      max-width:900px; margin:0 auto;
+    }
+    .model-card {
+      background:var(--surface);
+      border:1px solid var(--border);
+      border-radius:10px;
+      padding:1.5rem;
+      position:relative; overflow:hidden;
+    }
+    .model-card::before {
+      content:'';
+      position:absolute; top:0; left:0; right:0; height:3px;
+    }
+    .model-card.knn::before { background:var(--accent); }
+    .model-card.rf::before { background:#22c55e; }
+    .model-card.cnn::before { background:var(--accent3); }
+    .model-card.lstm::before { background:var(--accent2); }
+    .model-type {
+      font-family:'Space Mono',monospace;
+      font-size:0.65rem;
+      color:var(--muted);
+      text-transform:uppercase;
+      letter-spacing:0.1em;
+      margin-bottom:0.5rem;
+    }
+    .model-name { font-size:1.1rem; font-weight:700; margin-bottom:0.5rem; }
+    .model-desc { font-size:0.8rem; color:var(--muted); line-height:1.5; }
+    .model-badge {
+      display:inline-block;
+      margin-top:0.75rem;
+      font-family:'Space Mono',monospace;
+      font-size:0.65rem;
+      padding:0.2rem 0.6rem;
+      border-radius:100px;
+      background:rgba(0,212,255,0.1);
+      color:var(--accent);
+      border:1px solid rgba(0,212,255,0.2);
+    }
+
+    /* CTA section */
+    .cta-section {
+      position:relative; z-index:1;
+      text-align:center;
+      padding:5rem 2rem;
+      border-top:1px solid var(--border);
+    }
+    .cta-section h2 { font-size:2.5rem; font-weight:800; margin-bottom:1rem; }
+    .cta-section p { color:var(--muted); margin-bottom:2rem; }
+
+    footer {
+      position:relative; z-index:1;
+      text-align:center;
+      padding:2rem;
+      font-family:'Space Mono',monospace;
+      font-size:0.75rem;
+      color:var(--muted);
+      border-top:1px solid var(--border);
+    }
+  </style>
+</head>
+<body>
+  <nav>
+    <a href="/" class="logo">NIDS<span>.</span>AI</a>
+    <div class="nav-links">
+      <a href="#features">Features</a>
+      <a href="#models">Models</a>
+      <a href="/about">About</a>
+      <a href="/auth/login" class="btn-nav">Login</a>
+    </div>
+  </nav>
+
+  <section class="hero">
+    <div class="orb orb-1"></div>
+    <div class="orb orb-2"></div>
+    <div class="orb orb-3"></div>
+    <div class="hero-inner">
+      <span class="hero-badge">🛡️ NSL-KDD Dataset · ML + Deep Learning</span>
+      <h1>
+        Detect <span class="grad">Cyber Attacks</span><br>
+        Before They <span class="red">Strike</span>
+      </h1>
+      <p>
+        AI-powered network intrusion detection using KNN, Random Forest, CNN, and LSTM models
+        trained on the NSL-KDD dataset for real-time threat classification.
+      </p>
+      <div class="hero-cta">
+        <a href="/auth/signup" class="btn-primary">→ Get Started Free</a>
+        <a href="/auth/login" class="btn-outline">Sign In</a>
+      </div>
+    </div>
+  </section>
+
+  <div style="position:relative;z-index:1;padding:0 2rem 4rem;max-width:800px;margin:0 auto;">
+    <div class="stats-row">
+      <div class="stat-item">
+        <span class="stat-value">4</span>
+        <div class="stat-label">ML/DL Models</div>
+      </div>
+      <div class="stat-item">
+        <span class="stat-value">125K+</span>
+        <div class="stat-label">Training Samples</div>
+      </div>
+      <div class="stat-item">
+        <span class="stat-value">99%+</span>
+        <div class="stat-label">RF Accuracy</div>
+      </div>
+      <div class="stat-item">
+        <span class="stat-value">5</span>
+        <div class="stat-label">Attack Classes</div>
+      </div>
+    </div>
+  </div>
+
+  <section class="section" id="features">
+    <div class="section-header">
+      <span class="tag">Platform Features</span>
+      <h2>Everything you need to detect threats</h2>
+      <p>Comprehensive network intrusion detection with ML-powered analysis</p>
+    </div>
+    <div class="features-grid">
+      <div class="feature-card">
+        <div class="feature-icon">🔍</div>
+        <h3>Parameter Analysis</h3>
+        <p>Enter 41 NSL-KDD network parameters to get instant attack classification with probability scores.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">🎲</div>
+        <h3>Random Testing</h3>
+        <p>Test models against random dataset rows to evaluate detection performance instantly.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">📄</div>
+        <h3>Batch CSV Upload</h3>
+        <p>Upload CSV files for bulk prediction. Process hundreds of network records simultaneously.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">📊</div>
+        <h3>Visual Analytics</h3>
+        <p>Interactive charts showing attack distributions, model performance, and traffic patterns.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">🔐</div>
+        <h3>Secure Auth</h3>
+        <p>Google OAuth 2.0 + local authentication with bcrypt password hashing and sessions.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">📈</div>
+        <h3>Prediction History</h3>
+        <p>Every prediction stored in MongoDB with full audit trail and historical analytics.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="models-section" id="models">
+    <div class="section-header">
+      <span class="tag">Machine Learning Models</span>
+      <h2>4 Models, maximum coverage</h2>
+      <p>Choose from traditional ML or deep learning approaches</p>
+    </div>
+    <div class="models-grid">
+      <div class="model-card knn">
+        <div class="model-type">Traditional ML</div>
+        <div class="model-name">K-Nearest Neighbors</div>
+        <div class="model-desc">Distance-based classification with K=5 neighbors. Fast and interpretable for binary and multiclass detection.</div>
+        <span class="model-badge">Binary + Multiclass</span>
+      </div>
+      <div class="model-card rf">
+        <div class="model-type">Ensemble Method</div>
+        <div class="model-name">Random Forest</div>
+        <div class="model-desc">100-tree ensemble with high accuracy (99%+) on NSL-KDD. Resistant to overfitting and handles feature interactions well.</div>
+        <span class="model-badge" style="color:#22c55e;border-color:rgba(34,197,94,0.3);background:rgba(34,197,94,0.1)">Binary + Multiclass</span>
+      </div>
+      <div class="model-card cnn">
+        <div class="model-type">Deep Learning</div>
+        <div class="model-name">CNN</div>
+        <div class="model-desc">Convolutional neural network treating network features as 1D signals to extract local patterns in traffic data.</div>
+        <span class="model-badge" style="color:#a78bfa;border-color:rgba(167,139,250,0.3);background:rgba(167,139,250,0.1)">Binary + Multiclass</span>
+      </div>
+      <div class="model-card lstm">
+        <div class="model-type">Recurrent DL</div>
+        <div class="model-name">LSTM</div>
+        <div class="model-desc">Long Short-Term Memory RNN that captures sequential dependencies and temporal patterns in network traffic features.</div>
+        <span class="model-badge" style="color:#ff3c6e;border-color:rgba(255,60,110,0.3);background:rgba(255,60,110,0.1)">Binary + Multiclass</span>
+      </div>
+    </div>
+  </section>
+
+  <section class="cta-section">
+    <h2>Start detecting threats today</h2>
+    <p>Create a free account and run your first network traffic analysis in minutes.</p>
+    <a href="/auth/signup" class="btn-primary">→ Create Free Account</a>
+  </section>
+
+  <footer>
+    <p>NIDS.AI — Network Intrusion Detection System · Built with NSL-KDD Dataset</p>
+  </footer>
+</body>
+</html>

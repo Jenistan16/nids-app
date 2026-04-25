@@ -1,0 +1,536 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Predict — NIDS.AI</title>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root{--bg:#050a0f;--surface:#0b1421;--surface2:#0f1e30;--accent:#00d4ff;--accent2:#ff3c6e;--accent3:#7b2fff;--text:#e8edf2;--muted:#6b7f99;--border:rgba(0,212,255,0.12);--success:#22c55e}
+    *{margin:0;padding:0;box-sizing:border-box}
+    body{background:var(--bg);color:var(--text);font-family:'Syne',sans-serif;min-height:100vh;display:flex}
+    .sidebar{width:240px;min-height:100vh;background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;position:fixed;top:0;left:0;z-index:50}
+    .sidebar-logo{padding:1.5rem;border-bottom:1px solid var(--border)}
+    .sidebar-logo a{font-family:'Space Mono',monospace;font-size:1rem;font-weight:700;color:var(--accent);text-decoration:none}
+    .sidebar-logo a span{color:var(--accent2)}
+    .sidebar-nav{flex:1;padding:1rem 0}
+    .nav-section{padding:.5rem 1rem .25rem;font-family:'Space Mono',monospace;font-size:.65rem;color:var(--muted);text-transform:uppercase;letter-spacing:.1em}
+    .nav-item{display:flex;align-items:center;gap:.75rem;padding:.7rem 1.25rem;color:var(--muted);text-decoration:none;font-size:.88rem;transition:all .2s;border-left:3px solid transparent}
+    .nav-item:hover,.nav-item.active{color:var(--text);background:rgba(0,212,255,.06);border-left-color:var(--accent)}
+    .nav-item .icon{width:18px;text-align:center}
+    .sidebar-footer{padding:1.25rem;border-top:1px solid var(--border)}
+    .user-info{display:flex;align-items:center;gap:.75rem;margin-bottom:1rem}
+    .avatar{width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,var(--accent),var(--accent3));display:flex;align-items:center;justify-content:center;font-weight:700;font-size:.9rem;overflow:hidden;flex-shrink:0}
+    .avatar img{width:100%;height:100%;object-fit:cover}
+    .user-name{font-size:.85rem;font-weight:600}
+    .btn-logout{display:block;text-align:center;background:rgba(255,60,110,.1);border:1px solid rgba(255,60,110,.25);color:var(--accent2);padding:.5rem;border-radius:6px;font-size:.8rem;text-decoration:none;transition:background .2s}
+    .btn-logout:hover{background:rgba(255,60,110,.2)}
+    .main{margin-left:240px;flex:1;padding:2rem;max-width:calc(100vw - 240px)}
+    .page-header{margin-bottom:2rem}
+    .page-header h1{font-size:1.8rem;font-weight:800}
+    .page-header p{color:var(--muted);margin-top:.25rem;font-size:.9rem}
+
+    /* Tabs */
+    .tabs{display:flex;gap:0;margin-bottom:2rem;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:.25rem;width:fit-content}
+    .tab{padding:.6rem 1.5rem;border-radius:8px;font-size:.88rem;font-weight:600;cursor:pointer;color:var(--muted);border:none;background:transparent;transition:all .2s;font-family:'Syne',sans-serif}
+    .tab.active{background:linear-gradient(135deg,var(--accent),var(--accent3));color:white}
+    .tab-panel{display:none}
+    .tab-panel.active{display:block}
+
+    /* Alert */
+    .alert-error{background:rgba(255,60,110,.1);border:1px solid rgba(255,60,110,.3);color:var(--accent2);padding:.75rem 1rem;border-radius:8px;font-size:.85rem;margin-bottom:1.5rem}
+
+    /* Model selector */
+    .model-selector{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:.75rem;margin-bottom:2rem}
+    .model-option{position:relative}
+    .model-option input{position:absolute;opacity:0;pointer-events:none}
+    .model-label{display:block;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:1rem;cursor:pointer;transition:all .2s;text-align:center}
+    .model-label:hover{border-color:rgba(0,212,255,.4)}
+    .model-option input:checked + .model-label{border-color:var(--accent);background:rgba(0,212,255,.08)}
+    .model-icon{font-size:1.5rem;margin-bottom:.4rem}
+    .model-name-label{font-size:.85rem;font-weight:700;display:block;margin-bottom:.15rem}
+    .model-type-label{font-size:.72rem;color:var(--muted)}
+
+    /* Class type */
+    .class-selector{display:flex;gap:.75rem;margin-bottom:2rem}
+    .class-option{position:relative;flex:1}
+    .class-option input{position:absolute;opacity:0;pointer-events:none}
+    .class-label{display:block;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:1rem 1.5rem;cursor:pointer;transition:all .2s;text-align:center}
+    .class-label:hover{border-color:rgba(0,212,255,.4)}
+    .class-option input:checked + .class-label{border-color:var(--accent);background:rgba(0,212,255,.08)}
+
+    /* Form */
+    .form-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:2rem;margin-bottom:1.5rem}
+    .form-card-title{font-size:1rem;font-weight:700;margin-bottom:1.5rem;display:flex;align-items:center;gap:.5rem}
+    .form-card-title::before{content:'';display:inline-block;width:3px;height:14px;background:var(--accent);border-radius:2px}
+    .form-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:1rem}
+    .form-group label{display:block;font-family:'Space Mono',monospace;font-size:.65rem;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:.4rem}
+    .form-group input,.form-group select{width:100%;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1);border-radius:7px;color:var(--text);padding:.6rem .85rem;font-size:.88rem;font-family:'Syne',sans-serif;transition:border-color .2s}
+    .form-group input:focus,.form-group select:focus{outline:none;border-color:var(--accent)}
+    .form-group select option{background:#0b1421;color:var(--text)}
+    .form-hint{font-size:.7rem;color:var(--muted);margin-top:.25rem}
+
+    .btn-submit{background:linear-gradient(135deg,var(--accent),var(--accent3));color:white;border:none;padding:.85rem 2rem;border-radius:8px;font-size:.95rem;font-weight:700;font-family:'Syne',sans-serif;cursor:pointer;transition:all .2s;display:flex;align-items:center;gap:.5rem}
+    .btn-submit:hover{transform:translateY(-1px);box-shadow:0 8px 25px rgba(0,212,255,.25)}
+    .btn-submit:disabled{opacity:.6;cursor:not-allowed;transform:none}
+
+    /* Random panel */
+    .random-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:2rem;text-align:center}
+    .random-icon{font-size:3rem;margin-bottom:1rem}
+    .random-card h2{font-size:1.3rem;font-weight:800;margin-bottom:.5rem}
+    .random-card p{color:var(--muted);margin-bottom:2rem;font-size:.9rem;line-height:1.6;max-width:400px;margin-left:auto;margin-right:auto}
+
+    /* CSV upload */
+    .upload-zone{border:2px dashed var(--border);border-radius:12px;padding:3rem 2rem;text-align:center;cursor:pointer;transition:all .2s;position:relative}
+    .upload-zone:hover,.upload-zone.drag-over{border-color:var(--accent);background:rgba(0,212,255,.04)}
+    .upload-zone input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer}
+    .upload-icon{font-size:2.5rem;margin-bottom:.75rem}
+    .upload-text{font-size:.9rem;font-weight:600;margin-bottom:.25rem}
+    .upload-sub{font-size:.8rem;color:var(--muted)}
+    .file-selected{margin-top:.75rem;font-family:'Space Mono',monospace;font-size:.78rem;color:var(--accent)}
+
+    @media(max-width:900px){.sidebar{display:none}.main{margin-left:0;max-width:100vw}}
+  </style>
+</head>
+<body>
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <a href="/dashboard">NIDS<span>.</span>AI</a>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="nav-section">Main</div>
+      <a href="/dashboard" class="nav-item"><span class="icon">📊</span> Dashboard</a>
+      <a href="/predict" class="nav-item active"><span class="icon">🔍</span> Run Prediction</a>
+      <div class="nav-section">History</div>
+      <a href="/dashboard/history" class="nav-item"><span class="icon">📋</span> Prediction Logs</a>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="user-info">
+        <div class="avatar">
+          <% if (user.avatar) { %><img src="<%= user.avatar %>" alt="avatar"><% } else { %><%= user.name.charAt(0).toUpperCase() %><% } %>
+        </div>
+        <div>
+          <div class="user-name"><%= user.name %></div>
+        </div>
+      </div>
+      <a href="/auth/logout" class="btn-logout">Sign Out</a>
+    </div>
+  </aside>
+
+  <main class="main">
+    <div class="page-header">
+      <h1>Run Prediction</h1>
+      <p>Analyze network traffic using AI-powered intrusion detection</p>
+    </div>
+
+    <% if (locals.error) { %>
+      <div class="alert-error">⚠️ <%= error %></div>
+    <% } %>
+
+    <!-- Tabs -->
+    <div class="tabs">
+      <button class="tab active" onclick="showTab('parameter', this)">📝 Parameters</button>
+      <button class="tab" onclick="showTab('random', this)">🎲 Random Row</button>
+      <button class="tab" onclick="showTab('csv', this)">📄 CSV Upload</button>
+    </div>
+
+    <!-- Parameter Tab -->
+    <div id="panel-parameter" class="tab-panel active">
+      <form action="/predict/parameter" method="POST" id="paramForm">
+        <div class="form-card">
+          <div class="form-card-title">Select Model</div>
+          <div class="model-selector">
+            <div class="model-option">
+              <input type="radio" name="model" id="m-knn" value="knn" checked>
+              <label class="model-label" for="m-knn">
+                <div class="model-icon">🔵</div>
+                <span class="model-name-label">KNN</span>
+                <span class="model-type-label">K-Nearest Neighbors</span>
+              </label>
+            </div>
+            <div class="model-option">
+              <input type="radio" name="model" id="m-rf" value="random_forest">
+              <label class="model-label" for="m-rf">
+                <div class="model-icon">🌲</div>
+                <span class="model-name-label">Random Forest</span>
+                <span class="model-type-label">Ensemble Learning</span>
+              </label>
+            </div>
+            <div class="model-option">
+              <input type="radio" name="model" id="m-cnn" value="cnn">
+              <label class="model-label" for="m-cnn">
+                <div class="model-icon">🧠</div>
+                <span class="model-name-label">CNN</span>
+                <span class="model-type-label">Deep Learning</span>
+              </label>
+            </div>
+            <div class="model-option">
+              <input type="radio" name="model" id="m-lstm" value="lstm">
+              <label class="model-label" for="m-lstm">
+                <div class="model-icon">⚡</div>
+                <span class="model-name-label">LSTM</span>
+                <span class="model-type-label">Recurrent Neural Net</span>
+              </label>
+            </div>
+          </div>
+
+          <div class="form-card-title">Classification Type</div>
+          <div class="class-selector">
+            <div class="class-option">
+              <input type="radio" name="classType" id="c-binary" value="binary" checked>
+              <label class="class-label" for="c-binary">
+                <div style="font-size:1.2rem;margin-bottom:.25rem">⚡</div>
+                <div style="font-weight:700;font-size:.9rem">Binary</div>
+                <div style="font-size:.75rem;color:var(--muted)">Normal vs Attack</div>
+              </label>
+            </div>
+            <div class="class-option">
+              <input type="radio" name="classType" id="c-multi" value="multiclass">
+              <label class="class-label" for="c-multi">
+                <div style="font-size:1.2rem;margin-bottom:.25rem">🎯</div>
+                <div style="font-weight:700;font-size:.9rem">Multiclass</div>
+                <div style="font-size:.75rem;color:var(--muted)">DoS / Probe / R2L / U2R</div>
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <!-- Network features -->
+        <div class="form-card">
+          <div class="form-card-title">Basic Features</div>
+          <div class="form-grid">
+            <div class="form-group">
+              <label>Duration (sec)</label>
+              <input type="number" name="duration" value="0" min="0" step="1">
+            </div>
+            <div class="form-group">
+              <label>Protocol Type</label>
+              <select name="protocol_type">
+                <option value="tcp">TCP</option>
+                <option value="udp">UDP</option>
+                <option value="icmp">ICMP</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Service</label>
+              <select name="service">
+                <option value="http">HTTP</option>
+                <option value="ftp">FTP</option>
+                <option value="smtp">SMTP</option>
+                <option value="ssh">SSH</option>
+                <option value="dns">DNS</option>
+                <option value="other">Other</option>
+                <option value="private">Private</option>
+                <option value="telnet">Telnet</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Flag</label>
+              <select name="flag">
+                <option value="SF">SF</option>
+                <option value="S0">S0</option>
+                <option value="REJ">REJ</option>
+                <option value="RSTO">RSTO</option>
+                <option value="RSTR">RSTR</option>
+                <option value="SH">SH</option>
+                <option value="OTH">OTH</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Source Bytes</label>
+              <input type="number" name="src_bytes" value="491" min="0">
+            </div>
+            <div class="form-group">
+              <label>Destination Bytes</label>
+              <input type="number" name="dst_bytes" value="0" min="0">
+            </div>
+            <div class="form-group">
+              <label>Land</label>
+              <select name="land"><option value="0">0</option><option value="1">1</option></select>
+            </div>
+            <div class="form-group">
+              <label>Wrong Fragment</label>
+              <input type="number" name="wrong_fragment" value="0" min="0">
+            </div>
+            <div class="form-group">
+              <label>Urgent</label>
+              <input type="number" name="urgent" value="0" min="0">
+            </div>
+          </div>
+        </div>
+
+        <div class="form-card">
+          <div class="form-card-title">Content Features</div>
+          <div class="form-grid">
+            <div class="form-group">
+              <label>Hot</label>
+              <input type="number" name="hot" value="0" min="0">
+            </div>
+            <div class="form-group">
+              <label>Failed Logins</label>
+              <input type="number" name="num_failed_logins" value="0" min="0">
+            </div>
+            <div class="form-group">
+              <label>Logged In</label>
+              <select name="logged_in"><option value="0">0</option><option value="1">1</option></select>
+            </div>
+            <div class="form-group">
+              <label>Num Compromised</label>
+              <input type="number" name="num_compromised" value="0" min="0">
+            </div>
+            <div class="form-group">
+              <label>Root Shell</label>
+              <select name="root_shell"><option value="0">0</option><option value="1">1</option></select>
+            </div>
+            <div class="form-group">
+              <label>SU Attempted</label>
+              <select name="su_attempted"><option value="0">0</option><option value="1">1</option></select>
+            </div>
+            <div class="form-group">
+              <label>Num Root</label>
+              <input type="number" name="num_root" value="0" min="0">
+            </div>
+            <div class="form-group">
+              <label>File Creations</label>
+              <input type="number" name="num_file_creations" value="0" min="0">
+            </div>
+            <div class="form-group">
+              <label>Num Shells</label>
+              <input type="number" name="num_shells" value="0" min="0">
+            </div>
+            <div class="form-group">
+              <label>Access Files</label>
+              <input type="number" name="num_access_files" value="0" min="0">
+            </div>
+            <div class="form-group">
+              <label>Outbound Cmds</label>
+              <input type="number" name="num_outbound_cmds" value="0" min="0">
+            </div>
+            <div class="form-group">
+              <label>Is Host Login</label>
+              <select name="is_host_login"><option value="0">0</option><option value="1">1</option></select>
+            </div>
+            <div class="form-group">
+              <label>Is Guest Login</label>
+              <select name="is_guest_login"><option value="0">0</option><option value="1">1</option></select>
+            </div>
+          </div>
+        </div>
+
+        <div class="form-card">
+          <div class="form-card-title">Traffic Features</div>
+          <div class="form-grid">
+            <div class="form-group">
+              <label>Count</label>
+              <input type="number" name="count" value="2" min="0">
+            </div>
+            <div class="form-group">
+              <label>SRV Count</label>
+              <input type="number" name="srv_count" value="2" min="0">
+            </div>
+            <div class="form-group">
+              <label>Serror Rate</label>
+              <input type="number" name="serror_rate" value="0" min="0" max="1" step="0.01">
+            </div>
+            <div class="form-group">
+              <label>SRV Serror Rate</label>
+              <input type="number" name="srv_serror_rate" value="0" min="0" max="1" step="0.01">
+            </div>
+            <div class="form-group">
+              <label>Rerror Rate</label>
+              <input type="number" name="rerror_rate" value="0" min="0" max="1" step="0.01">
+            </div>
+            <div class="form-group">
+              <label>SRV Rerror Rate</label>
+              <input type="number" name="srv_rerror_rate" value="0" min="0" max="1" step="0.01">
+            </div>
+            <div class="form-group">
+              <label>Same SRV Rate</label>
+              <input type="number" name="same_srv_rate" value="1.0" min="0" max="1" step="0.01">
+            </div>
+            <div class="form-group">
+              <label>Diff SRV Rate</label>
+              <input type="number" name="diff_srv_rate" value="0" min="0" max="1" step="0.01">
+            </div>
+            <div class="form-group">
+              <label>SRV Diff Host Rate</label>
+              <input type="number" name="srv_diff_host_rate" value="0" min="0" max="1" step="0.01">
+            </div>
+          </div>
+        </div>
+
+        <div class="form-card">
+          <div class="form-card-title">Host-Based Features</div>
+          <div class="form-grid">
+            <div class="form-group">
+              <label>DST Host Count</label>
+              <input type="number" name="dst_host_count" value="255" min="0">
+            </div>
+            <div class="form-group">
+              <label>DST Host SRV Count</label>
+              <input type="number" name="dst_host_srv_count" value="11" min="0">
+            </div>
+            <div class="form-group">
+              <label>DST Same SRV Rate</label>
+              <input type="number" name="dst_host_same_srv_rate" value="0.04" min="0" max="1" step="0.01">
+            </div>
+            <div class="form-group">
+              <label>DST Diff SRV Rate</label>
+              <input type="number" name="dst_host_diff_srv_rate" value="0.06" min="0" max="1" step="0.01">
+            </div>
+            <div class="form-group">
+              <label>Same Src Port Rate</label>
+              <input type="number" name="dst_host_same_src_port_rate" value="0" min="0" max="1" step="0.01">
+            </div>
+            <div class="form-group">
+              <label>SRV Diff Host Rate</label>
+              <input type="number" name="dst_host_srv_diff_host_rate" value="0" min="0" max="1" step="0.01">
+            </div>
+            <div class="form-group">
+              <label>DST Serror Rate</label>
+              <input type="number" name="dst_host_serror_rate" value="0" min="0" max="1" step="0.01">
+            </div>
+            <div class="form-group">
+              <label>DST SRV Serror Rate</label>
+              <input type="number" name="dst_host_srv_serror_rate" value="0" min="0" max="1" step="0.01">
+            </div>
+            <div class="form-group">
+              <label>DST Rerror Rate</label>
+              <input type="number" name="dst_host_rerror_rate" value="0" min="0" max="1" step="0.01">
+            </div>
+            <div class="form-group">
+              <label>DST SRV Rerror Rate</label>
+              <input type="number" name="dst_host_srv_rerror_rate" value="0" min="0" max="1" step="0.01">
+            </div>
+          </div>
+        </div>
+
+        <button type="submit" class="btn-submit" id="submitBtn">
+          → Analyze Traffic
+        </button>
+      </form>
+    </div>
+
+    <!-- Random Tab -->
+    <div id="panel-random" class="tab-panel">
+      <form action="/predict/random" method="POST">
+        <div class="random-card">
+          <div class="random-icon">🎲</div>
+          <h2>Random Dataset Row Test</h2>
+          <p>Pick a random connection record from the NSL-KDD dataset and run it through the selected model for instant classification.</p>
+
+          <div class="model-selector" style="max-width:600px;margin:0 auto 1.5rem">
+            <div class="model-option">
+              <input type="radio" name="model" id="r-knn" value="knn" checked>
+              <label class="model-label" for="r-knn"><div class="model-icon">🔵</div><span class="model-name-label">KNN</span></label>
+            </div>
+            <div class="model-option">
+              <input type="radio" name="model" id="r-rf" value="random_forest">
+              <label class="model-label" for="r-rf"><div class="model-icon">🌲</div><span class="model-name-label">Random Forest</span></label>
+            </div>
+            <div class="model-option">
+              <input type="radio" name="model" id="r-cnn" value="cnn">
+              <label class="model-label" for="r-cnn"><div class="model-icon">🧠</div><span class="model-name-label">CNN</span></label>
+            </div>
+            <div class="model-option">
+              <input type="radio" name="model" id="r-lstm" value="lstm">
+              <label class="model-label" for="r-lstm"><div class="model-icon">⚡</div><span class="model-name-label">LSTM</span></label>
+            </div>
+          </div>
+
+          <div class="class-selector" style="max-width:400px;margin:0 auto 2rem">
+            <div class="class-option">
+              <input type="radio" name="classType" id="rc-bin" value="binary" checked>
+              <label class="class-label" for="rc-bin"><div style="font-weight:700;font-size:.9rem">Binary</div></label>
+            </div>
+            <div class="class-option">
+              <input type="radio" name="classType" id="rc-multi" value="multiclass">
+              <label class="class-label" for="rc-multi"><div style="font-weight:700;font-size:.9rem">Multiclass</div></label>
+            </div>
+          </div>
+
+          <button type="submit" class="btn-submit" style="margin:0 auto">🎲 Pick Random & Predict</button>
+        </div>
+      </form>
+    </div>
+
+    <!-- CSV Tab -->
+    <div id="panel-csv" class="tab-panel">
+      <form action="/predict/csv" method="POST" enctype="multipart/form-data">
+        <div class="form-card">
+          <div class="form-card-title">Model & Classification</div>
+          <div class="model-selector">
+            <div class="model-option">
+              <input type="radio" name="model" id="c-knn" value="knn" checked>
+              <label class="model-label" for="c-knn"><div class="model-icon">🔵</div><span class="model-name-label">KNN</span></label>
+            </div>
+            <div class="model-option">
+              <input type="radio" name="model" id="c-rf" value="random_forest">
+              <label class="model-label" for="c-rf"><div class="model-icon">🌲</div><span class="model-name-label">Random Forest</span></label>
+            </div>
+            <div class="model-option">
+              <input type="radio" name="model" id="c-cnn2" value="cnn">
+              <label class="model-label" for="c-cnn2"><div class="model-icon">🧠</div><span class="model-name-label">CNN</span></label>
+            </div>
+            <div class="model-option">
+              <input type="radio" name="model" id="c-lstm2" value="lstm">
+              <label class="model-label" for="c-lstm2"><div class="model-icon">⚡</div><span class="model-name-label">LSTM</span></label>
+            </div>
+          </div>
+          <div class="class-selector">
+            <div class="class-option">
+              <input type="radio" name="classType" id="cc-bin" value="binary" checked>
+              <label class="class-label" for="cc-bin"><div style="font-weight:700;font-size:.9rem">Binary</div></label>
+            </div>
+            <div class="class-option">
+              <input type="radio" name="classType" id="cc-multi" value="multiclass">
+              <label class="class-label" for="cc-multi"><div style="font-weight:700;font-size:.9rem">Multiclass</div></label>
+            </div>
+          </div>
+        </div>
+
+        <div class="form-card">
+          <div class="form-card-title">Upload CSV File</div>
+          <div class="upload-zone" id="uploadZone">
+            <input type="file" name="csvFile" accept=".csv" id="csvInput" onchange="updateFileName(this)">
+            <div class="upload-icon">📂</div>
+            <div class="upload-text">Drop CSV file here or click to browse</div>
+            <div class="upload-sub">NSL-KDD format · Max 100 rows processed · .csv files only</div>
+            <div class="file-selected" id="fileName"></div>
+          </div>
+        </div>
+
+        <button type="submit" class="btn-submit">📊 Run Batch Prediction</button>
+      </form>
+    </div>
+  </main>
+
+  <script>
+    function showTab(id, btn) {
+      document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+      document.getElementById('panel-' + id).classList.add('active');
+      btn.classList.add('active');
+    }
+
+    function updateFileName(input) {
+      const el = document.getElementById('fileName');
+      el.textContent = input.files[0] ? '✓ ' + input.files[0].name : '';
+    }
+
+    document.getElementById('paramForm')?.addEventListener('submit', function() {
+      const btn = document.getElementById('submitBtn');
+      btn.disabled = true;
+      btn.textContent = '⏳ Analyzing...';
+    });
+
+    // Check for hash
+    const hash = window.location.hash;
+    if (hash === '#random') {
+      document.querySelector('[onclick*="random"]')?.click();
+    } else if (hash === '#csv') {
+      document.querySelector('[onclick*="csv"]')?.click();
+    }
+  </script>
+</body>
+</html>
